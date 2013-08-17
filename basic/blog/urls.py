@@ -1,9 +1,10 @@
 from django.conf.urls.defaults import *
+from basic.blog.views import PostList
 
 
 urlpatterns = patterns('basic.blog.views',
     url(r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{1,2})/(?P<slug>[-\w]+)/$',
-        view='post_detail',
+        view=PostList.as_view(),
         name='blog_detail'
     ),
     url(r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{1,2})/$',
@@ -35,11 +36,11 @@ urlpatterns = patterns('basic.blog.views',
         name='blog_search'
     ),
     url(r'^page/(?P<page>\d+)/$',
-        view='post_list',
+        view=PostList.as_view(),
         name='blog_index_paginated'
     ),
     url(r'^$',
-        view='post_list',
+        view=PostList.as_view(),
         name='blog_index'
     ),
 )

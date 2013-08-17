@@ -1,14 +1,85 @@
-from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django.db.models import permalink
+from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
+from django.db.models import permalink
+from django.core.cache import cache
 from django.conf import settings
+from django.db import models
 
 from basic.blog.managers import PublicManager
 
 import datetime
-import tagging
 from tagging.fields import TagField
+
+from sugar.cache.utils import create_cache_key
+
+
+class Settings(models.Model):
+    '''
+    Global settings for the blog.
+
+    The class name is plural because "Setting" singular implies one and this is a collection of settings.
+
+    Possible: dynamic settings could be designed at some point to allow the user to add settings as they wish.
+    '''
+
+    EDITOR_CHOICES = (
+        (1, _('Text')),
+        (2, _('TinyMCE')),
+        (3, _('Django-WYSIWYG')),
+    )
+    site = models.ForeignKey(Site, unique=True)
+
+    #denormalized to reduce queries
+    site_name = models.CharField(max_length=50, editable=False)
+    author_name = models.CharField(_('author name'), max_length=255, blank=True,
+                null=True)
+    copyright = models.CharField(_('copyright'), max_length=255, blank=True, null=True)
+    about = models.TextField(_('about'), help_text=_('Accepts RAW html. By default, appears in right rail.'),
+                blank=True, null=True)
+
+    twitter_url = models.URLField(_('twitter url'), blank=True, null=True)
+    rss_url = models.URLField(_('rss url'), blank=True, null=True,
+                help_text=_('The location of your RSS feed. Often used to wire up feedburner.'))
+    email_subscribe_url = models.URLField(_('subscribe via email url'),
+                blank=True, null=True)
+    page_size = models.PositiveIntegerField(_('page size'), default=20)
+    ping_google = models.BooleanField(_('ping google'), default=False)
+    disqus_shortname = models.CharField(_('disqus shortname'), max_length=255, blank=True, null=True)
+
+    meta_keywords = models.TextField(_('meta keywords'), blank=True, null=True)
+    meta_description = models.TextField(_('meta description'), blank=True, null=True)
+    active_editor = models.IntegerField(_('editor'), choices=EDITOR_CHOICES, default=1)
+    excerpt_length = models.IntegerField(_('excerpt length'), default=500, 
+                    help_text=_('The character length of the post body field displayed in RSS templates.'))
+
+    class Meta:
+        verbose_name = _('settings')
+        verbose_name_plural = _('settings')
+
+    def __unicode__(self):
+        return "%s-settings" % self.site.name
+
+    def delete(self, *args, **kwargs):
+        if settings.SITE_ID != self.site.id:
+            super(Settings, self).delete(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        self.site_name = self.site.name
+        super(Settings, self).save(*args, **kwargs)
+
+    @staticmethod
+    def get_current():
+        site = Site.objects.get_current()
+        key = create_cache_key(Settings, field='site__id', field_value=site.id)
+        blog_settings = cache.get(key, None)
+        if blog_settings is None:
+            try:
+                blog_settings = Settings.objects.get(site=site)
+                cache.add(key, blog_settings)
+            except Settings.DoesNotExist:
+                return None
+        return blog_settings
 
 
 class Category(models.Model):
