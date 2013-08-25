@@ -1,12 +1,11 @@
 import re
 
+from django.views.generic.dates import YearArchiveView, MonthArchiveView, DayArchiveView
 from django.shortcuts import render_to_response, get_object_or_404
-from django.template import RequestContext
-from django.http import Http404
-#from django.views.generic import date_based, list_detail
 from django.views.generic.list import ListView
-from django.db.models import Q
+from django.template import RequestContext
 from django.conf import settings
+from django.db.models import Q
 
 from basic.blog.models import *
 from basic.tools.constants import STOP_WORDS_RE
@@ -19,38 +18,20 @@ class PostList(ListView):
     paginate_by = getattr(settings, 'BLOG_PAGESIZE', 20)
 
 
-def post_archive_year(request, year, **kwargs):
-    return date_based.archive_year(
-        request,
-        year=year,
-        date_field='publish',
-        queryset=Post.objects.published(),
-        make_object_list=True,
-        **kwargs
-    )
+class PostArchiveYear(YearArchiveView):
+    queryset = Post.objects.published()
+    date_field = 'publish'
+    make_object_list = True
 
 
-def post_archive_month(request, year, month, **kwargs):
-    return date_based.archive_month(
-        request,
-        year=year,
-        month=month,
-        date_field='publish',
-        queryset=Post.objects.published(),
-        **kwargs
-    )
+class PostArchiveMonth(MonthArchiveView):
+    queryset = Post.objects.published()
+    date_field = 'publish'
 
 
-def post_archive_day(request, year, month, day, **kwargs):
-    return date_based.archive_day(
-        request,
-        year=year,
-        month=month,
-        day=day,
-        date_field='publish',
-        queryset=Post.objects.published(),
-        **kwargs
-    )
+class PostArchiveDay(DayArchiveView):
+    queryset = Post.objects.published()
+    date_field = 'publish'
 
 
 def post_detail(request, slug, year, month, day, **kwargs):

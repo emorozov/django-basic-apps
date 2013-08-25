@@ -1,5 +1,5 @@
-from django.conf.urls.defaults import *
-from basic.blog.views import PostList
+from django.conf.urls import patterns, url
+from basic.blog.views import PostList, PostArchiveYear, PostArchiveMonth, PostArchiveDay
 
 
 urlpatterns = patterns('basic.blog.views',
@@ -8,15 +8,15 @@ urlpatterns = patterns('basic.blog.views',
         name='blog_detail'
     ),
     url(r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{1,2})/$',
-        view='post_archive_day',
+        view=PostArchiveDay.as_view(),
         name='blog_archive_day'
     ),
     url(r'^(?P<year>\d{4})/(?P<month>\w{3})/$',
-        view='post_archive_month',
+        view=PostArchiveMonth.as_view(),
         name='blog_archive_month'
     ),
     url(r'^(?P<year>\d{4})/$',
-        view='post_archive_year',
+        view=PostArchiveYear.as_view(),
         name='blog_archive_year'
     ),
     url(r'^categories/(?P<slug>[-\w]+)/$',
