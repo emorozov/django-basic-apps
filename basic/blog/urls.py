@@ -1,10 +1,10 @@
 from django.conf.urls import patterns, url
-from basic.blog.views import PostList, PostArchiveYear, PostArchiveMonth, PostArchiveDay
+from basic.blog.views import PostList, PostArchiveYear, PostArchiveMonth, PostArchiveDay, PostDetail
 
 
 urlpatterns = patterns('basic.blog.views',
     url(r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{1,2})/(?P<slug>[-\w]+)/$',
-        view=PostList.as_view(),
+        view=PostDetail.as_view(),
         name='blog_detail'
     ),
     url(r'^(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{1,2})/$',
