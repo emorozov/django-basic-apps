@@ -173,9 +173,9 @@ class Post(models.Model):
 
     @permalink
     def get_absolute_url(self):
-        return ('blog_detail_month_numeric', None, {
+        return ('blog_detail', None, {
             'year': self.publish.year,
-            'month': self.publish.strftime('%m').lower(),
+            'month': self.publish.strftime('%b').lower(),
             'day': self.publish.day,
             'slug': self.slug
         })
