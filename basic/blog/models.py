@@ -1,4 +1,5 @@
 from django.utils.translation import ugettext_lazy as _
+from django.utils.safestring import mark_safe
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
 from django.db.models import permalink
@@ -6,7 +7,11 @@ from django.core.cache import cache
 from django.conf import settings
 from django.db import models
 
+from django_markup.fields import MarkupField
+from django_markup.markup import formatter
+
 from basic.blog.managers import PublicManager
+
 
 import datetime
 from tagging.fields import TagField
@@ -50,7 +55,7 @@ class Settings(models.Model):
     meta_keywords = models.TextField(_('meta keywords'), blank=True, null=True)
     meta_description = models.TextField(_('meta description'), blank=True, null=True)
     active_editor = models.IntegerField(_('editor'), choices=EDITOR_CHOICES, default=1)
-    excerpt_length = models.IntegerField(_('excerpt length'), default=500, 
+    excerpt_length = models.IntegerField(_('excerpt length'), default=500,
                     help_text=_('The character length of the post body field displayed in RSS templates.'))
 
     class Meta:
@@ -107,19 +112,24 @@ class Post(models.Model):
         (1, _('Draft')),
         (2, _('Public')),
     )
-    title = models.CharField(_('title'), max_length=200)
-    slug = models.SlugField(_('slug'), unique_for_date='publish')
-    author = models.ForeignKey(User, blank=True, null=True)
-    body = models.TextField(_('body'), )
-    tease = models.TextField(_('tease'), blank=True, help_text=_('Concise text suggested. Does not appear in RSS feed.'))
-    status = models.IntegerField(_('status'), choices=STATUS_CHOICES, default=2)
-    allow_comments = models.BooleanField(_('allow comments'), default=True)
-    publish = models.DateTimeField(_('publish'), default=datetime.datetime.now)
-    created = models.DateTimeField(_('created'), auto_now_add=True)
-    modified = models.DateTimeField(_('modified'), auto_now=True)
-    categories = models.ManyToManyField(Category, blank=True)
-    tags = TagField()
-    objects = PublicManager()
+    title           = models.CharField(_('title'), max_length=200)
+    slug            = models.SlugField(_('slug'), unique_for_date='publish')
+    author          = models.ForeignKey(User, blank=True, null=True)
+
+    markup          = MarkupField(default='markdown')
+    body            = models.TextField(_('body'), )
+    tease           = models.TextField(_('tease'), blank=True, help_text=_('Concise text suggested. Does not appear in RSS feed.'))
+
+    body_markup     = models.TextField(editable=True, blank=True, null=True)
+    visits          = models.IntegerField(_('visits'), default=0, editable=False) #to keep track of most popular posts
+    status          = models.IntegerField(_('status'), choices=STATUS_CHOICES, default=2)
+    allow_comments  = models.BooleanField(_('allow comments'), default=True)
+    publish         = models.DateTimeField(_('publish'), default=datetime.datetime.now)
+    created         = models.DateTimeField(_('created'), auto_now_add=True)
+    modified        = models.DateTimeField(_('modified'), auto_now=True)
+    categories      = models.ManyToManyField(Category, blank=True)
+    tags            = TagField()
+    objects         = PublicManager()
 
     class Meta:
         verbose_name = _('post')
@@ -128,14 +138,44 @@ class Post(models.Model):
         ordering  = ('-publish',)
         get_latest_by = 'publish'
 
+    class Admin:
+        list_display  = ('title', 'publish', 'status')
+        list_filter   = ('publish', 'categories', 'status')
+        search_fields = ('title', 'body')
+
+    class ProxyMeta:
+        title = 'title'
+        description = 'body_markup'
+        tags = 'tags'
+        pub_date = 'publish'
+        active = {'status':2}
+
     def __unicode__(self):
         return u'%s' % self.title
 
+    def save(self, *args, **kwargs):
+        blog_settings = Settings.get_current()
+
+        if blog_settings.active_editor > 1:
+            self.markup = "none"
+            self.body_markup = self.body
+        else:
+            self.body_markup = mark_safe(formatter(self.body, filter_name=self.markup))
+        super(Post, self).save(*args, **kwargs)
+
+        ping_google = getattr(blog_settings,"ping_google", False)
+
+        if ping_google:
+            try:
+                ping_google()
+            except:
+                pass
+
     @permalink
     def get_absolute_url(self):
-        return ('blog_detail', None, {
+        return ('blog_detail_month_numeric', None, {
             'year': self.publish.year,
-            'month': self.publish.strftime('%b').lower(),
+            'month': self.publish.strftime('%m').lower(),
             'day': self.publish.day,
             'slug': self.slug
         })
@@ -145,6 +185,20 @@ class Post(models.Model):
 
     def get_next_post(self):
         return self.get_next_by_publish(status__gte=2)
+
+    @property
+    def get_meta_keywords(self):
+        if self.tags == '':
+            return Settings.get_current().meta_keywords
+        else:
+            return self.tags
+
+    @property
+    def get_meta_description(self):
+        if self.tease == '':
+            return Settings.get_current().meta_description
+        else:
+            return truncate_words(self.tease, 255)
 
 
 class BlogRoll(models.Model):
