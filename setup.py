@@ -35,4 +35,5 @@ setup(name='django-basic-apps',
     description='Django Basic Apps',
     author='Nathan Borror',
     url='http://github.com/nathanborror/django-basic-apps',
+    include_package_data=True,
     packages=packages)

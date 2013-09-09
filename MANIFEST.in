@@ -1,0 +1,2 @@
+recursive-include basic/blog/templates *.html *.txt
+
