@@ -14,8 +14,10 @@ from tagging.models import Tag, TaggedItem
 
 class PostList(ListView):
     template_name = 'blog/post_list.html'
-    queryset = Post.objects.published()
     paginate_by = getattr(settings, 'BLOG_PAGESIZE', 20)
+
+    def get_queryset(self):
+        return Post.objects.published()
 
 
 class PostArchiveYear(YearArchiveView):
