@@ -21,24 +21,32 @@ class PostList(ListView):
 
 
 class PostArchiveYear(YearArchiveView):
-    queryset = Post.objects.published()
     date_field = 'publish'
     make_object_list = True
 
+    def get_queryset(self):
+        return Post.objects.published()
+
 
 class PostArchiveMonth(MonthArchiveView):
-    queryset = Post.objects.published()
     date_field = 'publish'
+
+    def get_queryset(self):
+        return Post.objects.published()
 
 
 class PostArchiveDay(DayArchiveView):
-    queryset = Post.objects.published()
     date_field = 'publish'
+
+    def get_queryset(self):
+        return Post.objects.published()
 
 
 class PostDetail(DateDetailView):
-    queryset = Post.objects.published()
     date_field = 'publish'
+
+    def get_queryset(self):
+        return Post.objects.published()
 
 
 def category_list(request, template_name = 'blog/category_list.html', **kwargs):
