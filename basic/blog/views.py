@@ -66,26 +66,18 @@ def category_list(request, template_name = 'blog/category_list.html', **kwargs):
     )
 
 
-def category_detail(request, slug, template_name = 'blog/category_detail.html', **kwargs):
-    """
-    Category detail
+class CategoryDetail(ListView):
+    template_name = 'blog/category_detail.html'
+    paginate_by = getattr(settings, 'BLOG_PAGESIZE', 20)
 
-    Template: ``blog/category_detail.html``
-    Context:
-        object_list
-            List of posts specific to the given category.
-        category
-            Given category.
-    """
-    category = get_object_or_404(Category, slug__iexact=slug)
+    def get_queryset(self):
+        self.category = get_object_or_404(Category, slug__iexact=self.kwargs['slug'])
+        return self.category.post_set.published()
 
-    return list_detail.object_list(
-        request,
-        queryset=category.post_set.published(),
-        extra_context={'category': category},
-        template_name=template_name,
-        **kwargs
-    )
+    def get_context_data(self, **kwargs):
+        context = super(CategoryDetail, self).get_context_data(**kwargs)
+        context['category'] = self.category
+        return context
 
 
 def tag_detail(request, slug, template_name = 'blog/tag_detail.html', **kwargs):
