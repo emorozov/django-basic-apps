@@ -80,26 +80,18 @@ class CategoryDetail(ListView):
         return context
 
 
-def tag_detail(request, slug, template_name = 'blog/tag_detail.html', **kwargs):
-    """
-    Tag detail
+class TagDetail(ListView):
+    template_name = 'blog/tag_detail.html'
+    paginate_by = getattr(settings, 'BLOG_PAGESIZE', 20)
 
-    Template: ``blog/tag_detail.html``
-    Context:
-        object_list
-            List of posts specific to the given tag.
-        tag
-            Given tag.
-    """
-    tag = get_object_or_404(Tag, name__iexact=slug)
+    def get_queryset(self):
+        self.tag = get_object_or_404(Tag, name__iexact=self.kwargs['slug'])
+        return TaggedItem.objects.get_by_model(Post, self.tag).filter(status=2)
 
-    return list_detail.object_list(
-        request,
-        queryset=TaggedItem.objects.get_by_model(Post,tag).filter(status=2),
-        extra_context={'tag': tag},
-        template_name=template_name,
-        **kwargs
-    )
+    def get_context_data(self, **kwargs):
+        context = super(TagDetail, self).get_context_data(**kwargs)
+        context.update({'tag': self.tag})
+        return context
 
 
 # Stop Words courtesy of http://www.dcs.gla.ac.uk/idom/ir_resources/linguistic_utils/stop_words

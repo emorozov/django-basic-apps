@@ -1,5 +1,6 @@
 from django.conf.urls import patterns, url
-from basic.blog.views import PostList, PostArchiveYear, PostArchiveMonth, PostArchiveDay, PostDetail, CategoryDetail
+from basic.blog.views import (PostList, PostArchiveYear, PostArchiveMonth, PostArchiveDay, PostDetail,
+                              CategoryDetail, TagDetail)
 
 
 urlpatterns = patterns('basic.blog.views',
@@ -28,7 +29,7 @@ urlpatterns = patterns('basic.blog.views',
         name='blog_category_list'
     ),
     url(r'^tags/(?P<slug>[-\w]+)/$',
-        view='tag_detail',
+        view=TagDetail.as_view(),
         name='blog_tag_detail'
     ),
     url (r'^search/$',
