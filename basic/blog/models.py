@@ -1,8 +1,8 @@
 from django.utils.translation import ugettext_lazy as _
 from django.utils.safestring import mark_safe
-from django.utils.text import truncate_words
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
+from django.utils.text import Truncator
 from django.db.models import permalink
 from django.core.cache import cache
 from django.conf import settings
@@ -199,7 +199,7 @@ class Post(models.Model):
         if self.tease == '':
             return Settings.get_current().meta_description
         else:
-            return truncate_words(self.tease, 255)
+            return Truncator(self.tease).words(255, truncate='...')
 
 
 class BlogRoll(models.Model):
